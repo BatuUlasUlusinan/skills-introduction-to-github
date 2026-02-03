@@ -223,15 +223,45 @@ class ProductScraper:
             match = re.search(pattern, text)
             if match:
                 price = match.group(1)
-                # Normalize price format
-                price = price.replace(".", "").replace(",", ".")
-                try:
-                    float(price)
-                    return price
-                except ValueError:
-                    continue
+                # Normalize price format (Turkish format: dots as thousands, comma as decimal)
+                # e.g., "1.234,56" -> "1234.56"
+                normalized = self._normalize_price_format(price)
+                if normalized:
+                    return normalized
         
         return None
+    
+    def _normalize_price_format(self, price_str: str) -> Optional[str]:
+        """
+        Normalize price string to a valid float format.
+        Fiyat dizesini geçerli ondalık formata dönüştürür.
+        
+        Handles Turkish format (1.234,56) and international format (1,234.56).
+        """
+        if not price_str:
+            return None
+        
+        # Check if Turkish format (comma as decimal separator)
+        if "," in price_str and "." in price_str:
+            # Turkish: 1.234,56 -> dots are thousands, comma is decimal
+            if price_str.rfind(",") > price_str.rfind("."):
+                price_str = price_str.replace(".", "").replace(",", ".")
+            else:
+                # International: 1,234.56 -> commas are thousands, dot is decimal
+                price_str = price_str.replace(",", "")
+        elif "," in price_str:
+            # Only comma - likely Turkish decimal separator
+            price_str = price_str.replace(",", ".")
+        # If only dots, assume it's already correct format or thousands separators only
+        elif price_str.count(".") > 1:
+            # Multiple dots means thousands separators (e.g., "1.234.567")
+            price_str = price_str.replace(".", "")
+        
+        try:
+            float(price_str)
+            return price_str
+        except ValueError:
+            return None
     
     def _enrich_with_prices(self, results: list[SearchResult]) -> list[SearchResult]:
         """

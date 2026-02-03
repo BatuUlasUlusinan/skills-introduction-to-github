@@ -20,7 +20,7 @@ class ScraperConfig:
     openai_api_key: Optional[str] = None
     
     # Search settings / Arama ayarları
-    max_pages: int = 25  # Maximum pages to search / Aranacak maksimum sayfa sayısı
+    max_pages: int = 5  # Maximum pages to search / Aranacak maksimum sayfa sayısı (default 5 for efficiency)
     results_per_page: int = 10  # Results per page / Sayfa başına sonuç
     search_region: str = "tr"  # Search region (tr for Turkey) / Arama bölgesi
     search_language: str = "tr"  # Search language / Arama dili

@@ -237,10 +237,12 @@ Does this result match the searched product? Respond in JSON.
             return "Sonuç bulunamadı. / No results found."
         
         # Basic summary without AI
-        prices = [
-            float(r.price) for r in results 
-            if r.price and r.price.replace(".", "").replace(",", "").isdigit()
-        ]
+        prices = []
+        for r in results:
+            if r.price:
+                normalized = self._normalize_price(r.price)
+                if normalized is not None:
+                    prices.append(normalized)
         
         if prices:
             min_price = min(prices)
@@ -258,3 +260,34 @@ Does this result match the searched product? Respond in JSON.
             summary = f"Toplam {len(results)} sonuç bulundu. / Found {len(results)} results."
         
         return summary
+    
+    def _normalize_price(self, price_str: str) -> Optional[float]:
+        """
+        Normalize price string to a float value.
+        Fiyat dizesini ondalık değere dönüştürür.
+        
+        Handles Turkish format (1.234,56) and international format (1,234.56).
+        """
+        if not price_str:
+            return None
+        
+        # Check if Turkish format (comma as decimal separator)
+        if "," in price_str and "." in price_str:
+            # Turkish: 1.234,56 -> dots are thousands, comma is decimal
+            if price_str.rfind(",") > price_str.rfind("."):
+                price_str = price_str.replace(".", "").replace(",", ".")
+            else:
+                # International: 1,234.56 -> commas are thousands, dot is decimal
+                price_str = price_str.replace(",", "")
+        elif "," in price_str:
+            # Only comma - likely Turkish decimal separator
+            price_str = price_str.replace(",", ".")
+        # If only dots, check if it's thousands separators
+        elif price_str.count(".") > 1:
+            # Multiple dots means thousands separators (e.g., "1.234.567")
+            price_str = price_str.replace(".", "")
+        
+        try:
+            return float(price_str)
+        except ValueError:
+            return None

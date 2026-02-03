@@ -138,7 +138,7 @@ product_scraper/
 
 | Ayar / Setting | Varsayılan / Default | Açıklama / Description |
 |----------------|----------------------|------------------------|
-| `max_pages` | 25 | Maximum search pages / Maksimum arama sayfası |
+| `max_pages` | 5 | Maximum search pages / Maksimum arama sayfası |
 | `results_per_page` | 10 | Results per page / Sayfa başına sonuç |
 | `search_region` | "tr" | Search region / Arama bölgesi |
 | `search_language` | "tr" | Search language / Arama dili |
