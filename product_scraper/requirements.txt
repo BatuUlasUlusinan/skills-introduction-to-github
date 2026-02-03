@@ -1,0 +1,17 @@
+# Product Scraper Dependencies
+# Ürün Arama Aracı Bağımlılıkları
+
+# Core dependencies / Temel bağımlılıklar
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=5.1.0
+
+# Optional: OpenAI for AI-enhanced features
+# Opsiyonel: AI özellikleri için OpenAI
+openai>=1.12.0
+
+# Development dependencies / Geliştirme bağımlılıkları
+# pytest>=8.0.0
+# pytest-cov>=4.1.0
+# black>=24.1.0
+# mypy>=1.8.0
