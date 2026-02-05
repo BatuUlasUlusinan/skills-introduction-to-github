@@ -1,0 +1,21 @@
+{
+  "name": "skills-introduction-to-github",
+  "version": "1.0.0",
+  "description": "<header>",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No automated tests configured yet. Please add tests before running this command.\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BatuUlasUlusinan/skills-introduction-to-github.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/BatuUlasUlusinan/skills-introduction-to-github/issues"
+  },
+  "homepage": "https://github.com/BatuUlasUlusinan/skills-introduction-to-github#readme"
+}

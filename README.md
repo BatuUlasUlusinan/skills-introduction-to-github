@@ -73,3 +73,13 @@ Get help: [Post in our discussion board](https://github.com/orgs/skills/discussi
 &copy; 2024 GitHub &bull; [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md) &bull; [MIT License](https://gh.io/mit)
 
 </footer>
+
+## Activity Network / Trace Logic Graph prototipi
+
+Bu depo içine, Primavera P6 çıktılarından “başlıca aktiviteleri” seçip otomatik “Activity Network / Trace Logic Graph” üreten basit bir web prototipi eklendi.
+
+- `index.html` dosyasını açarak çalıştırabilirsiniz (yerel dosya veya statik sunucu yeterlidir).
+- Sol panelden XER/XML/CSV (veya JSON) içe aktarın, örnek veri butonuyla hazır akışı görebilirsiniz.
+- Kritik filtreleri, süre, WBS seviyesi, float ve durum seçicileri ile “başlıca aktiviteleri” belirleyin.
+- Grafikte otomatik yerleşim (dagre), pan/zoom, başlık ve lejand yerleşimi mevcuttur.
+- PNG/PDF olarak dışa aktarım desteklenir; A4 yatay ölçüye göre ölçeklenir.

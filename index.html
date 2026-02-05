@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Activity Network / Trace Logic Graph</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --gray-50: #f7f9fb;
+        --gray-100: #e8edf3;
+        --gray-300: #c9d3e1;
+        --gray-500: #6b7280;
+        --gray-700: #374151;
+        --primary: #0f62fe;
+        --critical: #d92d20;
+        --progress: #f97316;
+        --complete: #22c55e;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: var(--gray-50);
+        color: var(--gray-700);
+      }
+      .app {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        min-height: 100vh;
+      }
+      .panel {
+        padding: 16px;
+        border-right: 1px solid var(--gray-100);
+        background: #fff;
+        overflow-y: auto;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 12px;
+      }
+      h2 {
+        margin: 18px 0 10px;
+        font-size: 15px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid var(--gray-100);
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
+        margin-bottom: 14px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .field label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--gray-500);
+      }
+      .field input,
+      .field select,
+      .field textarea {
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--gray-300);
+        background: #fff;
+        font-size: 14px;
+      }
+      .pill-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .pill {
+        border: 1px solid var(--gray-300);
+        background: #fff;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .pill.active {
+        background: #eef2ff;
+        border-color: var(--primary);
+        color: #0f172a;
+      }
+      .button {
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+      .button.primary {
+        background: var(--primary);
+        color: #fff;
+      }
+      .button.ghost {
+        background: #fff;
+        color: var(--gray-700);
+        border: 1px solid var(--gray-300);
+      }
+      .button.full {
+        width: 100%;
+        text-align: center;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .canvas-area {
+        display: flex;
+        flex-direction: column;
+        padding: 18px;
+        gap: 12px;
+      }
+      .graph-shell {
+        position: relative;
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid var(--gray-100);
+        box-shadow: 0 15px 30px rgba(15, 23, 42, 0.06);
+        min-height: 520px;
+        overflow: hidden;
+      }
+      .graph-header {
+        padding: 14px 16px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .graph-title {
+        display: flex;
+        flex-direction: column;
+      }
+      .graph-title h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .graph-title span {
+        font-size: 12px;
+        color: var(--gray-500);
+      }
+      svg {
+        width: 100%;
+        height: 620px;
+        background: #f8fafc;
+      }
+      .legend {
+        position: absolute;
+        right: 16px;
+        bottom: 16px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid var(--gray-100);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 12px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+      }
+      .legend-row {
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        align-items: center;
+        gap: 6px;
+        margin: 4px 0;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        background: #eef2ff;
+        color: #312e81;
+        border: 1px solid #e0e7ff;
+      }
+      .list {
+        display: grid;
+        gap: 8px;
+        max-height: 220px;
+        overflow-y: auto;
+      }
+      .list-item {
+        padding: 10px;
+        border: 1px solid var(--gray-100);
+        border-radius: 10px;
+        background: #fff;
+      }
+      .muted {
+        color: var(--gray-500);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="panel">
+        <h1>Activity Network</h1>
+        <div class="card">
+          <h2>Veri yükle</h2>
+          <div class="field">
+            <label for="file">Primavera XER / XML / CSV</label>
+            <input id="file" type="file" accept=".xer,.xml,.csv,.xlsx,.json,.txt" />
+          </div>
+          <div class="toolbar" style="margin-top: 8px">
+            <button id="load-sample" class="button primary full">Örnek veriyi yükle</button>
+          </div>
+          <p class="muted" style="margin-top: 8px">
+            CSV başlıkları: id, name, start, finish, duration, wbs, predecessors, critical,
+            float, status
+          </p>
+        </div>
+        <div class="card">
+          <h2>Başlıca aktivite kriterleri</h2>
+          <div class="field">
+            <label>Kritik aktiviteler</label>
+            <div class="pill-row" id="critical-filter">
+              <span class="pill active" data-value="any">Hepsi</span>
+              <span class="pill" data-value="critical">Sadece kritik</span>
+              <span class="pill" data-value="noncritical">Kritik olmayan</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="min-duration">Min. süre (gün)</label>
+            <input id="min-duration" type="number" min="0" value="0" />
+          </div>
+          <div class="field">
+            <label for="max-wbs">Maks. WBS seviyesi</label>
+            <input id="max-wbs" type="number" min="0" value="0" />
+          </div>
+          <div class="field">
+            <label for="status-filter">Durum</label>
+            <select id="status-filter">
+              <option value="any">Tümü</option>
+              <option value="completed">Tamamlanan</option>
+              <option value="progress">Devam eden</option>
+              <option value="notstarted">Başlamadı</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="float-filter">Min. float (gün)</label>
+            <input id="float-filter" type="number" min="0" value="0" />
+          </div>
+          <div class="field">
+            <label>
+              <input id="include-milestones" type="checkbox" checked />
+              Milestone'ları dahil et
+            </label>
+          </div>
+          <div class="toolbar">
+            <button id="apply-filters" class="button primary full">Güncelle</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Yerleşim & dışa aktarım</h2>
+          <div class="field">
+            <label for="rankdir">Akış yönü</label>
+            <select id="rankdir">
+              <option value="LR">Soldan sağa</option>
+              <option value="TB">Yukarıdan aşağıya</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="spacing">Aktivite aralığı</label>
+            <input id="spacing" type="range" min="40" max="140" value="70" />
+          </div>
+          <div class="toolbar">
+            <button id="export-png" class="button ghost full">PNG dışa aktar</button>
+            <button id="export-pdf" class="button ghost full">PDF dışa aktar</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Seçilen başlıca aktiviteler</h2>
+          <div id="main-activities" class="list"></div>
+        </div>
+      </aside>
+      <main class="canvas-area">
+        <div class="graph-shell">
+          <div class="graph-header">
+            <div class="graph-title">
+              <h3 id="project-title">Proje: Örnek EPC Projesi</h3>
+              <span id="project-subtitle">Aktivite ağı &amp; trace logic</span>
+            </div>
+            <div class="toolbar">
+              <span id="report-date" class="badge"></span>
+              <button id="zoom-out" class="button ghost">−</button>
+              <button id="zoom-in" class="button ghost">+</button>
+              <button id="reset-view" class="button ghost">Sıfırla</button>
+            </div>
+          </div>
+          <svg id="graph" aria-label="Activity Network"></svg>
+          <div class="legend">
+            <strong>Lejand</strong>
+            <div class="legend-row">
+              <span style="width: 14px; height: 14px; background: #fff; border: 2px solid var(--critical); display: inline-block; border-radius: 6px"></span>
+              <span>Kritik aktivite</span>
+            </div>
+            <div class="legend-row">
+              <span style="width: 14px; height: 14px; background: var(--complete); display: inline-block; border-radius: 6px"></span>
+              <span>Tamamlanan</span>
+            </div>
+            <div class="legend-row">
+              <span style="width: 14px; height: 14px; background: var(--progress); display: inline-block; border-radius: 6px"></span>
+              <span>Devam eden</span>
+            </div>
+            <div class="legend-row">
+              <span style="width: 14px; height: 14px; background: #dbeafe; display: inline-block; border-radius: 6px"></span>
+              <span>Planlanan</span>
+            </div>
+            <div class="legend-row">
+              <span style="width: 14px; height: 14px; background: #000; clip-path: polygon(0 50%, 100% 0, 100% 100%); display: inline-block"></span>
+              <span>İlişki / bağımlılık</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const sampleActivities = [
+        {
+          id: "A1000",
+          name: "Mobilizasyon",
+          start: "2024-01-02",
+          finish: "2024-01-05",
+          duration: 3,
+          wbs: "1.0",
+          predecessors: [],
+          critical: true,
+          status: "Completed",
+        },
+        {
+          id: "A1010",
+          name: "Tasarım başlangıcı",
+          start: "2024-01-06",
+          finish: "2024-01-08",
+          duration: 2,
+          wbs: "1.1",
+          predecessors: ["A1000"],
+          critical: true,
+          status: "In Progress",
+          float: 0,
+        },
+        {
+          id: "A1020",
+          name: "Mühendislik",
+          start: "2024-01-09",
+          finish: "2024-01-20",
+          duration: 8,
+          wbs: "1.1.1",
+          predecessors: ["A1010"],
+          critical: true,
+          status: "In Progress",
+          float: 1,
+        },
+        {
+          id: "A1030",
+          name: "Satınalma",
+          start: "2024-01-09",
+          finish: "2024-01-25",
+          duration: 12,
+          wbs: "1.2",
+          predecessors: ["A1010"],
+          critical: false,
+          status: "Not Started",
+          float: 6,
+        },
+        {
+          id: "A1040",
+          name: "Saha hazırlığı",
+          start: "2024-01-21",
+          finish: "2024-02-05",
+          duration: 11,
+          wbs: "1.3",
+          predecessors: ["A1020", "A1030"],
+          critical: true,
+          status: "Not Started",
+          float: 0,
+        },
+        {
+          id: "A1050",
+          name: "Temel imalatı",
+          start: "2024-02-06",
+          finish: "2024-02-20",
+          duration: 10,
+          wbs: "1.3.1",
+          predecessors: ["A1040"],
+          critical: true,
+          status: "Not Started",
+          float: 0,
+        },
+        {
+          id: "A1060",
+          name: "Mekanik montaj",
+          start: "2024-02-18",
+          finish: "2024-03-05",
+          duration: 12,
+          wbs: "1.4",
+          predecessors: ["A1050"],
+          critical: false,
+          status: "Not Started",
+          float: 5,
+        },
+        {
+          id: "M1",
+          name: "Devreye alma milestone",
+          start: "2024-03-15",
+          finish: "2024-03-15",
+          duration: 0,
+          wbs: "1.5",
+          predecessors: ["A1060"],
+          critical: true,
+          status: "Not Started",
+          milestone: true,
+          float: 0,
+        },
+      ];
+
+      const el = (id) => document.getElementById(id);
+
+      const SVG_NS = "http://www.w3.org/2000/svg";
+
+      const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
+      function formatDate(value) {
+        if (!value) return "";
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return String(value);
+        return d.toISOString().slice(0, 10);
+      }
+
+      function parseDate(value) {
+        if (!value) return "";
+        return formatDate(value);
+      }
+
+      function coerceBool(value) {
+        if (typeof value === "boolean") return value;
+        if (value === undefined || value === null) return false;
+        return ["yes", "true", "1", "kritik", "critical"].includes(
+          String(value).trim().toLowerCase()
+        );
+      }
+
+      function parsePredecessors(value) {
+        if (!value) return [];
+        if (Array.isArray(value)) return value.filter(Boolean).map((s) => String(s).trim());
+        return String(value)
+          .split(/[,;]+/)
+          .map((v) => v.trim())
+          .filter(Boolean);
+      }
+
+      function parseCsv(text) {
+        const rows = text.split(/\r?\n/).filter((line) => line.trim().length);
+        if (!rows.length) return [];
+        const headers = rows[0].split(",").map((h) => h.trim());
+        return rows.slice(1).map((line) => {
+          const cols = line.split(",");
+          const obj = {};
+          headers.forEach((h, i) => (obj[h] = cols[i]));
+          return obj;
+        });
+      }
+
+      function normalizeActivity(raw, fallbackIndex = 0) {
+        if (!raw) return null;
+        return {
+          id:
+            raw.id ||
+            raw.ID ||
+            raw.activityId ||
+            raw["Activity ID"] ||
+            `ACT-${fallbackIndex + 1}`,
+          name: raw.name || raw.Name || raw["Activity Name"] || `Aktivite ${fallbackIndex + 1}`,
+          start: parseDate(raw.start || raw.Start || raw["Start Date"] || raw["Early Start"]),
+          finish: parseDate(raw.finish || raw.Finish || raw["Finish Date"] || raw["Early Finish"]),
+          duration:
+            Number(raw.duration || raw["Original Duration"] || raw["Duration"]) || undefined,
+          wbs: raw.wbs || raw.WBS || raw["WBS Code"] || "",
+          predecessors: parsePredecessors(raw.predecessors || raw.Predecessors || raw["Pred"]),
+          critical: coerceBool(raw.critical || raw["Critical"] || raw["Is Critical"]),
+          float: raw.float !== undefined ? Number(raw.float) : undefined,
+          status: raw.status || raw.Status || raw["Activity Status"] || "",
+          milestone: coerceBool(raw.milestone || raw["Milestone"] || raw["Is Milestone"]),
+        };
+      }
+
+      function wbsLevel(code) {
+        if (!code) return 0;
+        return code.split(/[.>]/).length;
+      }
+
+      function filterActivities(data, filters, pinnedIds = new Set()) {
+        const main = [];
+        data.forEach((act) => {
+          if (pinnedIds.has(act.id)) {
+            main.push(act);
+            return;
+          }
+          if (!filters.includeMilestones && (act.milestone || act.duration === 0)) return;
+          if (filters.minDuration && act.duration !== undefined && act.duration < filters.minDuration)
+            return;
+          if (filters.maxWbs > 0 && wbsLevel(act.wbs) > filters.maxWbs) return;
+          if (filters.minFloat && (act.float ?? 0) < filters.minFloat) return;
+          if (filters.critical === "critical" && !act.critical) return;
+          if (filters.critical === "noncritical" && act.critical) return;
+          if (filters.status === "completed" && act.status?.toLowerCase() !== "completed") return;
+          if (filters.status === "progress" && act.status?.toLowerCase() !== "in progress") return;
+          if (
+            filters.status === "notstarted" &&
+            act.status &&
+            act.status.toLowerCase() !== "not started"
+          )
+            return;
+          main.push(act);
+        });
+        return main;
+      }
+
+      function buildLayout(activities, { spacing, rankdir }) {
+        const nodeWidth = 220;
+        const nodeHeight = 90;
+        const margin = 60;
+        const map = new Map(activities.map((a) => [a.id, a]));
+        const memo = new Map();
+
+        const levelOf = (id, stack = new Set()) => {
+          if (memo.has(id)) return memo.get(id);
+          if (stack.has(id)) return 0; // break cycles
+          stack.add(id);
+          const act = map.get(id);
+          let level = 0;
+          (act?.predecessors || []).forEach((pred) => {
+            if (map.has(pred)) {
+              level = Math.max(level, levelOf(pred, stack) + 1);
+            }
+          });
+          memo.set(id, level);
+          stack.delete(id);
+          return level;
+        };
+
+        const columns = new Map();
+        activities.forEach((act) => {
+          const lvl = levelOf(act.id);
+          if (!columns.has(lvl)) columns.set(lvl, []);
+          columns.get(lvl).push(act);
+        });
+
+        columns.forEach((arr) =>
+          arr.sort((a, b) => (a.start || "").localeCompare(b.start || "") || a.id.localeCompare(b.id))
+        );
+
+        const nodes = [];
+        const edges = [];
+        const maxLevel = Math.max(...columns.keys(), 0);
+        let maxRows = 0;
+
+        columns.forEach((arr, level) => {
+          maxRows = Math.max(maxRows, arr.length);
+          arr.forEach((act, idx) => {
+            const width = nodeWidth;
+            const height = act.milestone || act.duration === 0 ? 70 : nodeHeight;
+            const x =
+              rankdir === "TB"
+                ? margin + idx * (width + spacing)
+                : margin + level * (width + spacing);
+            const y =
+              rankdir === "TB"
+                ? margin + level * (height + spacing)
+                : margin + idx * (height + spacing);
+            nodes.push({ id: act.id, x, y, width, height, act });
+          });
+        });
+
+        const nodeLookup = new Map(nodes.map((n) => [n.id, n]));
+        activities.forEach((act) => {
+          act.predecessors?.forEach((pred) => {
+            if (nodeLookup.has(pred) && nodeLookup.has(act.id)) {
+              edges.push({ from: nodeLookup.get(pred), to: nodeLookup.get(act.id) });
+            }
+          });
+        });
+
+        const width =
+          margin * 2 +
+          (rankdir === "TB" ? Math.max(maxRows, 1) * (nodeWidth + spacing) : (maxLevel + 1) * (nodeWidth + spacing));
+        const height =
+          margin * 2 +
+          (rankdir === "TB" ? (maxLevel + 1) * (nodeHeight + spacing) : Math.max(maxRows, 1) * (nodeHeight + spacing));
+        return {
+          width,
+          height,
+          nodes,
+          edges,
+        };
+      }
+
+      function statusColor(act) {
+        const status = (act.status || "").toLowerCase();
+        if (status.includes("complete")) return "var(--complete)";
+        if (status.includes("progress") || status.includes("in progress")) return "var(--progress)";
+        return "#dbeafe";
+      }
+
+      function drawGraph(layout, { zoom, onToggle }, pinnedIds) {
+        const svg = el("graph");
+        while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+        const defs = document.createElementNS(SVG_NS, "defs");
+        const marker = document.createElementNS(SVG_NS, "marker");
+        marker.setAttribute("id", "arrow");
+        marker.setAttribute("viewBox", "0 0 10 10");
+        marker.setAttribute("refX", "9");
+        marker.setAttribute("refY", "5");
+        marker.setAttribute("markerWidth", "8");
+        marker.setAttribute("markerHeight", "8");
+        marker.setAttribute("orient", "auto-start-reverse");
+        const markerPath = document.createElementNS(SVG_NS, "path");
+        markerPath.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+        markerPath.setAttribute("fill", "#334155");
+        marker.appendChild(markerPath);
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+
+        const group = document.createElementNS(SVG_NS, "g");
+        group.setAttribute("transform", `translate(${zoom.x},${zoom.y}) scale(${zoom.k})`);
+        svg.appendChild(group);
+
+        layout.edges.forEach(({ from, to }) => {
+          const path = document.createElementNS(SVG_NS, "path");
+          const startX = from.x + from.width / 2;
+          const startY = from.y + from.height / 2;
+          const endX = to.x - to.width / 2;
+          const endY = to.y + to.height / 2;
+          const midX = (startX + endX) / 2;
+          const d = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
+          path.setAttribute("d", d);
+          path.setAttribute("fill", "none");
+          path.setAttribute("stroke", "#334155");
+          path.setAttribute("stroke-width", "1.6");
+          path.setAttribute("marker-end", "url(#arrow)");
+          group.appendChild(path);
+        });
+
+        layout.nodes.forEach((node) => {
+          const wrap = document.createElementNS(SVG_NS, "g");
+          wrap.setAttribute("transform", `translate(${node.x},${node.y})`);
+          wrap.style.cursor = "pointer";
+          wrap.addEventListener("click", () => onToggle && onToggle(node.act.id));
+
+          const rect = document.createElementNS(SVG_NS, "rect");
+          rect.setAttribute("x", -node.width / 2);
+          rect.setAttribute("y", -node.height / 2);
+          rect.setAttribute("rx", "12");
+          rect.setAttribute("ry", "12");
+          rect.setAttribute("width", node.width);
+          rect.setAttribute("height", node.height);
+          rect.setAttribute("fill", statusColor(node.act));
+          rect.setAttribute("stroke", node.act.critical ? "var(--critical)" : "#1e293b");
+          rect.setAttribute("stroke-width", pinnedIds.has(node.act.id) ? "3" : "2");
+          wrap.appendChild(rect);
+
+          const title = document.createElementNS(SVG_NS, "text");
+          title.setAttribute("text-anchor", "middle");
+          title.setAttribute("font-size", "12");
+          title.setAttribute("font-weight", "600");
+          title.setAttribute("fill", "#0f172a");
+          title.setAttribute("y", "-6");
+          title.textContent = `${node.act.id} – ${node.act.name}`;
+          wrap.appendChild(title);
+
+          const dates = document.createElementNS(SVG_NS, "text");
+          dates.setAttribute("text-anchor", "middle");
+          dates.setAttribute("font-size", "11");
+          dates.setAttribute("fill", "#0f172a");
+          dates.setAttribute("y", "12");
+          dates.textContent = `${node.act.start || "?"} ➜ ${node.act.finish || "?"}`;
+          wrap.appendChild(dates);
+
+          const meta = document.createElementNS(SVG_NS, "text");
+          meta.setAttribute("text-anchor", "middle");
+          meta.setAttribute("font-size", "10");
+          meta.setAttribute("fill", "#0f172a");
+          meta.setAttribute("y", "30");
+          meta.textContent = `${node.act.duration ?? "-"} gün • WBS ${node.act.wbs || "-"}`;
+          wrap.appendChild(meta);
+
+          group.appendChild(wrap);
+        });
+
+        svg.setAttribute("viewBox", `0 0 ${layout.width} ${layout.height}`);
+      }
+
+      function exportSvgAsPng() {
+        const svg = document.getElementById("graph");
+        const serializer = new XMLSerializer();
+        const source = serializer.serializeToString(svg);
+        const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+
+        const img = new Image();
+        img.onload = function () {
+          const canvas = document.createElement("canvas");
+          canvas.width = svg.clientWidth * 2;
+          canvas.height = svg.clientHeight * 2;
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const png = canvas.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.download = "activity-network.png";
+          link.href = png;
+          link.click();
+          URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      }
+
+      function exportPdf() {
+        const svg = document.getElementById("graph");
+        const serializer = new XMLSerializer();
+        const source = serializer.serializeToString(svg);
+        const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = function () {
+          const printWindow = window.open("", "_blank");
+          if (!printWindow) return;
+          printWindow.document.write(
+            `<html><head><title>PDF Export</title></head><body style="margin:0"><img src="${img.src}" style="width:100%"></body></html>`
+          );
+          printWindow.document.close();
+          printWindow.focus();
+          printWindow.print();
+          URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      }
+
+      function renderMainActivities(list) {
+        const container = el("main-activities");
+        container.innerHTML = "";
+        if (!list.length) {
+          container.innerHTML = '<p class="muted">Henüz seçim yok.</p>';
+          return;
+        }
+        list.forEach((a) => {
+          const div = document.createElement("div");
+          div.className = "list-item";
+          div.innerHTML = `<strong>${a.id}</strong> – ${a.name}<br/><span class="muted">${a.start || "?"} ➜ ${
+            a.finish || "?"
+          } · WBS ${a.wbs || "-"}</span>`;
+          container.appendChild(div);
+        });
+      }
+
+      const state = {
+        activities: [...sampleActivities],
+        pinned: new Set(),
+        filters: {
+          critical: "any",
+          minDuration: 0,
+          maxWbs: 0,
+          status: "any",
+          minFloat: 0,
+          includeMilestones: true,
+        },
+        layout: {
+          rankdir: "LR",
+          spacing: 70,
+        },
+        zoom: { x: 0, y: 0, k: 1 },
+      };
+
+      function updateGraph() {
+        const main = filterActivities(state.activities, state.filters, state.pinned);
+        const layout = buildLayout(main, state.layout);
+        drawGraph(
+          layout,
+          {
+            zoom: state.zoom,
+            onToggle: (id) => {
+              if (state.pinned.has(id)) state.pinned.delete(id);
+              else state.pinned.add(id);
+              updateGraph();
+            },
+          },
+          state.pinned
+        );
+        renderMainActivities(main);
+      }
+
+      function bindControls() {
+        el("load-sample").onclick = () => {
+          state.activities = [...sampleActivities];
+          state.pinned = new Set();
+          updateGraph();
+        };
+
+        el("file").addEventListener("change", (e) => {
+          const [file] = e.target.files || [];
+          if (!file) return;
+          const ext = (file.name.split(".").pop() || "").toLowerCase();
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const content = ev.target.result;
+            if (ext === "csv") {
+              const parsed = parseCsv(content);
+              state.activities = parsed.map((row, idx) => normalizeActivity(row, idx)).filter(Boolean);
+            } else if (ext === "json") {
+              const rows = JSON.parse(content);
+              state.activities = rows.map((row, idx) => normalizeActivity(row, idx)).filter(Boolean);
+            } else if (ext === "xml" || ext === "xer") {
+              const doc = new DOMParser().parseFromString(content, "application/xml");
+              const nodes = Array.from(
+                doc.querySelectorAll("Task, Activity, ActivityObject, TaskObject")
+              );
+              state.activities = nodes
+                .map((node, idx) =>
+                  normalizeActivity(
+                    {
+                      id:
+                        node.querySelector("ActivityID, TaskID")?.textContent ||
+                        node.getAttribute("id"),
+                      name:
+                        node.querySelector("ActivityName, Name")?.textContent ||
+                        node.getAttribute("name"),
+                      start:
+                        node.querySelector("Start")?.textContent ||
+                        node.querySelector("EarlyStart")?.textContent,
+                      finish:
+                        node.querySelector("Finish")?.textContent ||
+                        node.querySelector("EarlyFinish")?.textContent,
+                      duration: node.querySelector("OriginalDuration")?.textContent,
+                      wbs: node.querySelector("WBSObjectID, WBS")?.textContent,
+                      predecessors: node.querySelector("Predecessors")?.textContent,
+                      critical: node.querySelector("Critical")?.textContent,
+                      float: node.querySelector("TotalFloat")?.textContent,
+                      status: node.querySelector("Status")?.textContent,
+                      milestone: node.querySelector("IsMilestone")?.textContent,
+                    },
+                    idx
+                  )
+                )
+                .filter(Boolean);
+            } else {
+              alert("Desteklenmeyen format. Lütfen CSV, JSON veya XML yükleyin.");
+              return;
+            }
+            state.pinned = new Set();
+            updateGraph();
+          };
+          reader.readAsText(file);
+        });
+
+        el("critical-filter").onclick = (e) => {
+          if (!e.target.dataset?.value) return;
+          [...e.currentTarget.children].forEach((c) => c.classList.remove("active"));
+          e.target.classList.add("active");
+          state.filters.critical = e.target.dataset.value;
+        };
+
+        el("apply-filters").onclick = () => {
+          state.filters.minDuration = Number(el("min-duration").value) || 0;
+          state.filters.maxWbs = Number(el("max-wbs").value) || 0;
+          state.filters.status = el("status-filter").value;
+          state.filters.minFloat = Number(el("float-filter").value) || 0;
+          state.filters.includeMilestones = el("include-milestones").checked;
+          updateGraph();
+        };
+
+        el("rankdir").onchange = (e) => {
+          state.layout.rankdir = e.target.value;
+          updateGraph();
+        };
+
+        el("spacing").oninput = (e) => {
+          state.layout.spacing = Number(e.target.value);
+          updateGraph();
+        };
+
+        el("zoom-in").onclick = () => {
+          state.zoom.k = Math.min(3, state.zoom.k + 0.15);
+          updateGraph();
+        };
+        el("zoom-out").onclick = () => {
+          state.zoom.k = Math.max(0.3, state.zoom.k - 0.15);
+          updateGraph();
+        };
+        el("reset-view").onclick = () => {
+          state.zoom = { x: 0, y: 0, k: 1 };
+          updateGraph();
+        };
+        el("export-png").onclick = exportSvgAsPng;
+        el("export-pdf").onclick = exportPdf;
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        bindControls();
+        el("report-date").textContent = `Güncelleme: ${new Date().toLocaleDateString("tr-TR", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })}`;
+
+        const svg = el("graph");
+        let isPanning = false;
+        let last = { x: 0, y: 0 };
+
+        svg.addEventListener("pointerdown", (e) => {
+          isPanning = true;
+          last = { x: e.clientX, y: e.clientY };
+          svg.setPointerCapture(e.pointerId);
+        });
+
+        svg.addEventListener("pointermove", (e) => {
+          if (!isPanning) return;
+          const dx = e.clientX - last.x;
+          const dy = e.clientY - last.y;
+          state.zoom.x += dx;
+          state.zoom.y += dy;
+          last = { x: e.clientX, y: e.clientY };
+          updateGraph();
+        });
+
+        svg.addEventListener("pointerup", (e) => {
+          isPanning = false;
+          svg.releasePointerCapture(e.pointerId);
+        });
+
+        svg.addEventListener(
+          "wheel",
+          (e) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.1 : -0.1;
+            state.zoom.k = clamp(state.zoom.k + delta, 0.3, 3);
+            updateGraph();
+          },
+          { passive: false }
+        );
+
+        updateGraph();
+      });
+    </script>
+  </body>
+</html>
