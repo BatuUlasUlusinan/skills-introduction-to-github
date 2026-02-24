@@ -497,7 +497,7 @@ Layer 5: Reflection Agent Score
     "correctness": {
       "weight": 0.30,
       "criteria": [
-        "Does output fulfil stated requirements?",
+        "Does output fulfill stated requirements?",
         "Are edge cases handled?",
         "Is business logic accurate?"
       ]
